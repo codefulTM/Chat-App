@@ -1,5 +1,7 @@
 import express from 'express';
 import UserModel from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -26,10 +28,13 @@ router.post('register', async (req, res) => {
             throw new Error('Email already exists');
         }
 
+        // hash password
+        const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+
         res.json(await UserModel.create({
             username: req.body.username,
             email: req.body.email,
-            password: req.body.password,
+            password: hashedPassword,
             displayName: req.body.displayName,
             lastOnline: Date.now
         }));
@@ -40,7 +45,15 @@ router.post('register', async (req, res) => {
 });
 
 router.post('login', (req, res) => {
+    try {
+        // check if the information in req.body is correct
+        // if the information is incorrect -> throw error
 
+        // if the information is correct -> return a jwt token
+    }
+    catch(err) {
+        console.log((err as Error).message);
+    }
 })
 
 export default router;
