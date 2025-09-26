@@ -12,6 +12,9 @@ import UserModel from './models/User.js';
 import ConversationModel from './models/Conversation.js';
 import MessageModel from './models/Message.js';
 
+import authRouter from './routes/auth.js';
+import conversationsRouter from './routes/conversations.js';
+
 const app = express();
 app.use(cors({origin: process.env.FRONTEND_URL, credentials: true}));
 app.use(express.json());
@@ -22,6 +25,8 @@ if(!process.env.MONGO_URI) {
 mongoose.connect(process.env.MONGO_URI);
 
 // api routes
+app.use('/auth', authRouter);
+app.use('/conversations', conversationsRouter);
 
 // attach socket.io server
 const server = http.createServer(app);
