@@ -25,8 +25,8 @@ if(!process.env.MONGO_URI) {
 mongoose.connect(process.env.MONGO_URI);
 
 // api routes
-app.use('/auth', authRouter);
-app.use('/conversations', conversationsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/conversations', conversationsRouter);
 
 // attach socket.io server
 const server = http.createServer(app);
