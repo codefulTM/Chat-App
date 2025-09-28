@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { setCookie } from "nookies";
 import { FormEvent, useState } from "react";
 
@@ -7,21 +8,25 @@ export default function LoginForm() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        }
+      );
       const data = await response.json();
       if (data.success) {
         // attach jwt token to cookie
@@ -31,6 +36,7 @@ export default function LoginForm() {
           maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
         };
         setCookie(null, "jwt", token, cookieOptions);
+        router.push("/chats");
       } else {
         setError(data.message);
       }
@@ -83,12 +89,23 @@ export default function LoginForm() {
             }}
           />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center my-2">
           <button
-            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400"
+            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
             type="submit"
           >
             Login
+          </button>
+        </div>
+        <div className="flex justify-center">
+          <button
+            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/register");
+            }}
+          >
+            Register
           </button>
         </div>
       </form>

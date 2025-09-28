@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import ChatList from "./ChatList";
 import Conversation from "./Conversation";
 import { parseCookies } from "nookies";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { SocketContext, SocketProvider } from "@/contexts/socketContext";
 
 export default function ChatPage() {
   const [token, setToken] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,10 +27,10 @@ export default function ChatPage() {
     <SocketProvider token={token}>
       <div className="flex">
         <aside className="w-1/3">
-          <ChatList />
+          <ChatList token={token} setConversationId={setConversationId} />
         </aside>
         <main className="w-2/3">
-          <Conversation />
+          <Conversation conversationId={conversationId} />
         </main>
       </div>
     </SocketProvider>

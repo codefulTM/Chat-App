@@ -14,6 +14,7 @@ import MessageModel from './models/Message.js';
 
 import authRouter from './routes/auth.js';
 import conversationsRouter from './routes/conversations.js';
+import jwtMiddleware from './middlewares/jwtMiddleware.js';
 
 const app = express();
 app.use(cors({origin: process.env.FRONTEND_URL, credentials: true}));
@@ -26,7 +27,7 @@ mongoose.connect(process.env.MONGO_URI);
 
 // api routes
 app.use('/api/auth', authRouter);
-app.use('/api/conversations', conversationsRouter);
+app.use('/api/conversations', jwtMiddleware, conversationsRouter);
 
 // attach socket.io server
 const server = http.createServer(app);

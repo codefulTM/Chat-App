@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export default function RegisterForm() {
@@ -8,6 +9,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState<string>("");
   const [displayName, setDisplayName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -109,12 +111,23 @@ export default function RegisterForm() {
             }}
           />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center my-2">
           <button
-            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400"
+            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
             type="submit"
           >
             Register
+          </button>
+        </div>
+        <div className="flex justify-center">
+          <button
+            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/login");
+            }}
+          >
+            Login
           </button>
         </div>
       </form>
