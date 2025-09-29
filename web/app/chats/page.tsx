@@ -35,7 +35,7 @@ export default function ChatPage() {
             setToUser={setToUser}
           />
         </aside>
-        <main className="w-2/3 p-2">
+        <main className="w-2/3 p-2 h-screen">
           <Conversation
             setConversationId={setConversationId}
             token={token}
