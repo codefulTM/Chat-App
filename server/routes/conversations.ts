@@ -22,6 +22,34 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/:toUserId', async (req, res) => {
+    const reqObject = req as any;
+    const userId = reqObject.user.id;
+    const toUserId = req.params.toUserId;
+    try {
+        let data = await ConversationModel.findOne({
+            members: {
+                $all: [userId, toUserId]
+            }
+        });
+        if(!data) {
+            data = await ConversationModel.create({
+                members: [userId, toUserId]
+            });
+        }
+        return res.json({
+            success: true,
+            message: data
+        });
+    } 
+    catch(err) {
+        return res.json({
+            success: false,
+            message: 'Database error'
+        })
+    }
+});
+
 router.get('/:conversationId/messages', async (req, res) => {
     const { limit = 10, skip = 0 } = req.query;
     const conversationId = req.params.conversationId;

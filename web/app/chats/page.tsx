@@ -30,7 +30,11 @@ export default function ChatPage() {
           <ChatList token={token} setConversationId={setConversationId} />
         </aside>
         <main className="w-2/3">
-          <Conversation conversationId={conversationId} />
+          <Conversation
+            setConversationId={setConversationId}
+            token={token}
+            conversationId={conversationId}
+          />
         </main>
       </div>
     </SocketProvider>
