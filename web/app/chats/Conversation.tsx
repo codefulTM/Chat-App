@@ -14,7 +14,8 @@ export default function Conversation({
 }) {
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<any>("");
+  const [messages, setMessages] = useState<any>([]);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${displayName}`, {
@@ -31,12 +32,11 @@ export default function Conversation({
   }, [displayName]);
 
   useEffect(() => {
-    console.log("hello world");
-    if (!currentUserId) {
+    if (!currentUser) {
       return;
     }
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${currentUserId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${currentUser._id}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -50,7 +50,7 @@ export default function Conversation({
           setConversationId(data.message._id);
         }
       });
-  }, [currentUserId]);
+  }, [currentUser]);
 
   if (!conversationId) {
     return (
@@ -72,7 +72,7 @@ export default function Conversation({
               <li
                 key={user._id}
                 onClick={() => {
-                  setCurrentUserId(user._id);
+                  setCurrentUser(user);
                 }}
               >
                 {user.displayName}
@@ -83,5 +83,19 @@ export default function Conversation({
       </div>
     );
   }
-  return <div>Conversation</div>;
+  return (
+    <div>
+      <h1>{currentUser.displayName}</h1>
+      <ul>
+        {messages.map((message) => {
+          return (
+            <li key={message._id}>
+              <h2>{message.sender}</h2>
+              <p>{message.content}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }

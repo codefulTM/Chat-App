@@ -1,8 +1,7 @@
 "use client";
 
+import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
-import { devIndicatorServerState } from "next/dist/server/dev/dev-indicator-server-state";
-import { parseCookies } from "nookies";
 import { useEffect, useState } from "react";
 
 export default function ChatList({
@@ -13,6 +12,7 @@ export default function ChatList({
   setConversationId?: any;
 }) {
   const socket = useSocket();
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<any>([]);
 
   useEffect(() => {
@@ -25,6 +25,7 @@ export default function ChatList({
       .then((data) => {
         if (data.success) {
           setConversations(data.message);
+          console.log(conversations);
         }
       })
       .catch((err) => console.log(err));
@@ -32,14 +33,32 @@ export default function ChatList({
 
   return (
     <div>
-      <button>Create new conversation</button>
+      <button
+        onClick={() => {
+          setConversationId(null);
+        }}
+      >
+        Create new conversation
+      </button>
       {conversations.map((conversation) => {
+        // Find the other user in the conversation(not the current user)
+        const user1 = conversation.members[0];
+        const user2 = conversation.members[1];
+        let otherUser = undefined;
+        if (user1._id !== user?.id) {
+          otherUser = user1;
+        } else {
+          otherUser = user2;
+        }
         return (
-          <div key={conversation._id}>
-            <h1>
-              {conversation.members[0]} - {conversation.members[1]}
-            </h1>
-            <p>{conversation.lastMessage}</p>
+          <div
+            key={conversation._id}
+            onClick={() => {
+              setConversationId(conversation._id);
+            }}
+          >
+            <h1>{otherUser?.displayName}</h1>
+            <p>{conversation.lastMessage?.content}</p>
           </div>
         );
       })}

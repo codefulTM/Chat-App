@@ -8,7 +8,12 @@ router.get('/', async (req, res) => {
     const reqObject = req as any;
     const userId = reqObject.user.id;
     try {
-        const conversations = await ConversationModel.find({members: {$in: [userId]}});
+        const conversations = await ConversationModel.find({members: {$in: [userId]}})
+            .populate({
+                path: 'members',
+                select: 'displayName avatarUrl',
+                model: 'User'
+            });
         return res.json({
             success: true,
             message: conversations
