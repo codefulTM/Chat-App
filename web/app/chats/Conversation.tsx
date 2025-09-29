@@ -7,14 +7,17 @@ export default function Conversation({
   conversationId,
   setConversationId,
   token,
+  toUser,
+  setToUser,
 }: {
   conversationId: string | null;
   setConversationId: any;
   token: string | null;
+  toUser: any;
+  setToUser: any;
 }) {
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
-  const [currentUser, setCurrentUser] = useState<any>("");
   const [messages, setMessages] = useState<any>([]);
 
   useEffect(() => {
@@ -29,14 +32,14 @@ export default function Conversation({
           setUsers(data.message);
         }
       });
-  }, [displayName]);
+  }, [displayName, token]);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!toUser) {
       return;
     }
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${currentUser._id}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${toUser._id}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -45,16 +48,15 @@ export default function Conversation({
     )
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         if (data.success) {
           setConversationId(data.message._id);
         }
       });
-  }, [currentUser]);
+  }, [toUser, token]);
 
   if (!conversationId) {
     return (
-      <div>
+      <div className="flex flex-col items-center gap-4">
         <input
           className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           type="search"
@@ -66,14 +68,15 @@ export default function Conversation({
             setDisplayName(e.target.value);
           }}
         />
-        <ul>
+        <ul className="list-none flex flex-col gap-2">
           {users.map((user) => {
             return (
               <li
                 key={user._id}
                 onClick={() => {
-                  setCurrentUser(user);
+                  setToUser({ ...user });
                 }}
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded-md"
               >
                 {user.displayName}
               </li>
@@ -84,13 +87,13 @@ export default function Conversation({
     );
   }
   return (
-    <div>
-      <h1>{currentUser.displayName}</h1>
-      <ul>
+    <div className="flex flex-col items-center gap-4">
+      <h1 className="text-2xl font-bold">{toUser?.displayName}</h1>
+      <ul className="list-none flex flex-col gap-2">
         {messages.map((message) => {
           return (
-            <li key={message._id}>
-              <h2>{message.sender}</h2>
+            <li key={message._id} className="border-b border-gray-300 p-2">
+              <h2 className="text-lg font-bold">{message.sender}</h2>
               <p>{message.content}</p>
             </li>
           );

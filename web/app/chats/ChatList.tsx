@@ -7,9 +7,13 @@ import { useEffect, useState } from "react";
 export default function ChatList({
   token,
   setConversationId,
+  toUser,
+  setToUser,
 }: {
   token: string | null;
   setConversationId?: any;
+  toUser: any;
+  setToUser: any;
 }) {
   const socket = useSocket();
   const { user } = useAuth();
@@ -32,11 +36,12 @@ export default function ChatList({
   }, [token]);
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <button
         onClick={() => {
           setConversationId(null);
         }}
+        className="mx-auto px-4 py-2 bg-sky-300 rounded-lg shadow-md hover:shadow-lg hover:bg-sky-400"
       >
         Create new conversation
       </button>
@@ -55,10 +60,12 @@ export default function ChatList({
             key={conversation._id}
             onClick={() => {
               setConversationId(conversation._id);
+              setToUser(otherUser);
             }}
+            className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg hover:bg-gray-100"
           >
-            <h1>{otherUser?.displayName}</h1>
-            <p>{conversation.lastMessage?.content}</p>
+            <h1 className="text-lg font-bold">{otherUser?.displayName}</h1>
+            <p className="text-sm">{conversation.lastMessage?.content}</p>
           </div>
         );
       })}

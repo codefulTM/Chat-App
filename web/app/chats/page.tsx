@@ -10,6 +10,7 @@ import { SocketContext, SocketProvider } from "@/contexts/socketContext";
 export default function ChatPage() {
   const [token, setToken] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [toUser, setToUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,14 +27,21 @@ export default function ChatPage() {
   return (
     <SocketProvider token={token}>
       <div className="flex">
-        <aside className="w-1/3">
-          <ChatList token={token} setConversationId={setConversationId} />
+        <aside className="w-1/3 p-2">
+          <ChatList
+            token={token}
+            setConversationId={setConversationId}
+            toUser={toUser}
+            setToUser={setToUser}
+          />
         </aside>
-        <main className="w-2/3">
+        <main className="w-2/3 p-2">
           <Conversation
             setConversationId={setConversationId}
             token={token}
             conversationId={conversationId}
+            toUser={toUser}
+            setToUser={setToUser}
           />
         </main>
       </div>
