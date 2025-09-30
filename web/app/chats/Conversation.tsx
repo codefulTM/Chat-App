@@ -1,5 +1,7 @@
 "use client";
 
+import useAuth from "@/hooks/useAuth";
+import useSocket from "@/hooks/useSocket";
 import { useEffect, useState } from "react";
 import { createSecureContext } from "tls";
 
@@ -19,6 +21,10 @@ export default function Conversation({
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
   const [messages, setMessages] = useState<any>([]);
+  const [text, setText] = useState<string>("");
+  const { user } = useAuth();
+  const socket = useSocket();
+  // console.log(socket);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${displayName}`, {
@@ -53,6 +59,49 @@ export default function Conversation({
         }
       });
   }, [toUser, token]);
+
+  // Fetch messages from conversation
+  useEffect(() => {
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          for (const message of data.message) {
+            setMessages((messages) => [message, ...messages]);
+          }
+        }
+      });
+  }, [conversationId]);
+
+  const handleSendMessage = () => {
+    if (!text.trim()) return;
+    try {
+      socket?.emit("private_message", {
+        toUserId: toUser._id,
+        conversationId: conversationId,
+        content: text,
+      });
+      setMessages((messages) => [
+        ...messages,
+        {
+          conversationId: conversationId,
+          sender: user?.id,
+          receiver: toUser._id,
+          content: text,
+        },
+      ]);
+      setText("");
+    } catch (err) {
+      console.error("Error sending message: ", err);
+    }
+  };
 
   if (!conversationId) {
     return (
@@ -95,7 +144,7 @@ export default function Conversation({
       <div className="flex-1 overflow-y-auto space-y-4">
         {messages.map((message) => (
           <div key={message._id} className="border-b border-gray-300 p-2">
-            <h2 className="text-lg font-bold">{message.sender}</h2>
+            <h2 className="text-lg font-bold">{message.sender.displayName}</h2>
             <p>{message.content}</p>
           </div>
         ))}
@@ -109,6 +158,16 @@ export default function Conversation({
           id="submitText"
           placeholder="Enter text here"
           className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && text.trim() !== "") {
+              handleSendMessage();
+              setText("");
+            }
+          }}
         />
       </div>
     </div>

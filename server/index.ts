@@ -39,7 +39,7 @@ const io = new Server(server, {
 
 io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth?.token;
+    const token = socket.handshake.auth?.token.split(' ')[1];
     if(!token) {
       return next(new Error('Authentication error'));
     }

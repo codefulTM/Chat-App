@@ -62,6 +62,10 @@ router.get('/:conversationId/messages', async (req, res) => {
         const messages = await MessageModel.find({
             conversationId: conversationId
         })
+            .populate({
+                path: 'sender',
+                model: 'User'
+            })
             .skip(Number(skip))
             .limit(Number(limit))
             .sort({createdAt: -1});
