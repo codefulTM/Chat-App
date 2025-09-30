@@ -34,6 +34,7 @@ export default function LoginForm() {
         const cookieOptions = {
           sameSite: "strict",
           maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+          path: "/",
         };
         setCookie(null, "jwt", token, cookieOptions);
         router.push("/chats");

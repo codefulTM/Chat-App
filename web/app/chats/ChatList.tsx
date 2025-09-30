@@ -29,7 +29,6 @@ export default function ChatList({
       .then((data) => {
         if (data.success) {
           setConversations(data.message);
-          console.log(conversations);
         }
       })
       .catch((err) => console.log(err));
