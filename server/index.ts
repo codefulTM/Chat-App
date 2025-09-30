@@ -103,7 +103,6 @@ io.on('connection', (socket) => {
         model: 'User'
       })
 
-
       // send the message information to the sender
       io.to(socket.id).emit('private_message', {message});
 
@@ -117,13 +116,7 @@ io.on('connection', (socket) => {
         const receiverSockets = onlineMap.get(payload.toUserId);
         for(const socketId of receiverSockets) {
           io.to(socketId).emit('private_message', {
-            message: {
-              _id: message._id,
-              conversationId: payload.conversationId,
-              sender: userId,
-              content: payload.content,
-              createdAt: message.createdAt
-            }
+            message
           });
         }
       }

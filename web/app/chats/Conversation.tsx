@@ -87,7 +87,7 @@ export default function Conversation({
     if (!socket) return;
 
     socket?.on("private_message", (payload) => {
-      console.log(payload.message);
+      console.log(payload);
       setMessages((messages) => [...messages, payload.message]);
     });
     return () => {
@@ -163,7 +163,12 @@ export default function Conversation({
       {/* Messages chiếm toàn bộ phần còn lại */}
       <div className="flex-1 overflow-y-auto space-y-4">
         {messages.map((message) => (
-          <div key={message._id} className="border-b border-gray-300 p-2">
+          <div
+            key={message._id}
+            className={`p-2 ${
+              message.sender._id === user?.id ? "text-right" : "text-left"
+            }`}
+          >
             <h2 className="text-lg font-bold">{message.sender.displayName}</h2>
             <p>{message.content}</p>
           </div>
