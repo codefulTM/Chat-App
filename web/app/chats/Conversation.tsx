@@ -2,7 +2,7 @@
 
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createSecureContext } from "tls";
 
 export default function Conversation({
@@ -24,8 +24,9 @@ export default function Conversation({
   const [text, setText] = useState<string>("");
   const { user } = useAuth();
   const socket = useSocket();
-  // console.log(socket);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // search for users
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${displayName}`, {
       headers: {
@@ -40,6 +41,7 @@ export default function Conversation({
       });
   }, [displayName, token]);
 
+  // get conversation info
   useEffect(() => {
     if (!toUser) {
       return;
@@ -60,7 +62,7 @@ export default function Conversation({
       });
   }, [toUser, token]);
 
-  // Fetch messages from conversation
+  // get messages from conversation
   useEffect(() => {
     fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages`,
@@ -80,6 +82,20 @@ export default function Conversation({
       });
   }, [conversationId]);
 
+  // handle socket.io events
+  useEffect(() => {
+    if (!socket) return;
+
+    socket?.on("private_message", (payload) => {
+      console.log(payload.message);
+      setMessages((messages) => [...messages, payload.message]);
+    });
+    return () => {
+      socket?.off("private_message");
+    };
+  }, [socket]);
+
+  // handle send message
   const handleSendMessage = () => {
     if (!text.trim()) return;
     try {
@@ -88,20 +104,19 @@ export default function Conversation({
         conversationId: conversationId,
         content: text,
       });
-      setMessages((messages) => [
-        ...messages,
-        {
-          conversationId: conversationId,
-          sender: user?.id,
-          receiver: toUser._id,
-          content: text,
-        },
-      ]);
       setText("");
     } catch (err) {
       console.error("Error sending message: ", err);
     }
   };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   if (!conversationId) {
     return (
@@ -148,6 +163,7 @@ export default function Conversation({
             <p>{message.content}</p>
           </div>
         ))}
+        <div ref={messagesEndRef}></div>
       </div>
 
       {/* Input luôn dính dưới */}

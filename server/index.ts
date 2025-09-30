@@ -91,13 +91,21 @@ io.on('connection', (socket) => {
       }
 
       // create a new message
-      const message = await MessageModel.create({
+      let message = await MessageModel.create({
         conversationId: payload.conversationId,
         sender: userId,
         receiver: payload.toUserId,
         content: payload.content,
         type: payload.type || 'text'
       });
+      message = await message.populate({
+        path: 'sender',
+        model: 'User'
+      })
+
+
+      // send the message information to the sender
+      io.to(socket.id).emit('private_message', {message});
 
       // update the latest message of the conversation
       const conv = await ConversationModel.findByIdAndUpdate(payload.conversationId, {
@@ -105,7 +113,7 @@ io.on('connection', (socket) => {
       });
 
       // send to receiver if online 
-      if(onlineMap.has(payload.toUserId)) {
+      if(onlineMap.has(payload.toUserId) && payload.toUserId !== userId) {
         const receiverSockets = onlineMap.get(payload.toUserId);
         for(const socketId of receiverSockets) {
           io.to(socketId).emit('private_message', {
