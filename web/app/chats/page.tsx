@@ -27,6 +27,7 @@ export default function ChatPage() {
   return (
     <SocketProvider token={token}>
       <div className="flex">
+        <header className="h-12 bg-red-300"></header>
         <aside className="w-1/3 p-2">
           <ChatList
             token={token}

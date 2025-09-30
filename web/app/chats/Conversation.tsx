@@ -118,6 +118,11 @@ export default function Conversation({
     scrollToBottom();
   }, [messages]);
 
+  // when conversation id changes, messages are deleted
+  useEffect(() => {
+    setMessages([]);
+  }, [conversationId]);
+
   if (!conversationId) {
     return (
       <div className="flex flex-col items-center gap-4">
