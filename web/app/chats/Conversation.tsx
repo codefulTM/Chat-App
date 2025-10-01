@@ -21,10 +21,15 @@ export default function Conversation({
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
   const [messages, setMessages] = useState<any>([]);
+  const [messagePage, setMessagePage] = useState<number>(1);
+  const [perMessagePage, setPerMessagePage] = useState<number>(10);
+  const [shouldScrollToBottom, setShouldScrollToBottom] =
+    useState<boolean>(false);
   const [text, setText] = useState<string>("");
   const { user } = useAuth();
   const socket = useSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // search for users
   useEffect(() => {
@@ -64,8 +69,10 @@ export default function Conversation({
 
   // get messages from conversation
   useEffect(() => {
+    setMessages([]);
+    setMessagePage(1);
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages?limit=${perMessagePage}&skip=0`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -75,9 +82,8 @@ export default function Conversation({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          for (const message of data.message) {
-            setMessages((messages) => [message, ...messages]);
-          }
+          setShouldScrollToBottom(true);
+          setMessages(data.message);
         }
       });
   }, [conversationId]);
@@ -87,7 +93,7 @@ export default function Conversation({
     if (!socket) return;
 
     socket?.on("private_message", (payload) => {
-      console.log(payload);
+      setShouldScrollToBottom(true);
       setMessages((messages) => [...messages, payload.message]);
     });
     return () => {
@@ -115,13 +121,47 @@ export default function Conversation({
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldScrollToBottom) {
+      scrollToBottom();
+      setShouldScrollToBottom(false);
+    }
   }, [messages]);
 
-  // when conversation id changes, messages are deleted
-  useEffect(() => {
-    setMessages([]);
-  }, [conversationId]);
+  // handle for when the messages are scrolled
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop } = messagesContainerRef.current;
+    if (scrollTop === 0) {
+      const newMessagePage = messagePage + 1;
+      setMessagePage(newMessagePage);
+      // fetch for new messages then update the messages states
+      const url = `${
+        process.env.NEXT_PUBLIC_API_URL
+      }/api/conversations/${conversationId}/messages?limit=${perMessagePage}&skip=${
+        (newMessagePage - 1) * perMessagePage
+      }`;
+      console.log(url);
+      fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            // if there is no data to update -> decrease message page by 1
+            if (data.message.length === 0) {
+              setMessagePage((prev) => Math.max(prev - 1, 1));
+            } else {
+              setMessages((prevMessages) => [
+                ...data.message.reverse(),
+                ...prevMessages,
+              ]);
+            }
+          }
+        });
+    }
+  };
 
   if (!conversationId) {
     return (
@@ -161,7 +201,11 @@ export default function Conversation({
       <h1 className="text-2xl font-bold p-4 border-b">{toUser?.displayName}</h1>
 
       {/* Messages chiếm toàn bộ phần còn lại */}
-      <div className="flex-1 overflow-y-auto space-y-4">
+      <div
+        className="flex-1 overflow-y-auto space-y-4"
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+      >
         {messages.map((message) => (
           <div
             key={message._id}

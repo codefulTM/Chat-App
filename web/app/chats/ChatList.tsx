@@ -54,6 +54,7 @@ export default function ChatList({
         } else {
           otherUser = user2;
         }
+        // console.log(conversation);
         return (
           <div
             key={conversation._id}
@@ -64,7 +65,7 @@ export default function ChatList({
             className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg hover:bg-gray-100"
           >
             <h1 className="text-lg font-bold">{otherUser?.displayName}</h1>
-            <p className="text-sm">{conversation.lastMessage?.content}</p>
+            <p className="text-sm">{conversation.lastMessage}</p>
           </div>
         );
       })}
