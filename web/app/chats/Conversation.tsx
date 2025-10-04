@@ -2,8 +2,7 @@
 
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
-import { useEffect, useRef, useState } from "react";
-import { createSecureContext } from "tls";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export default function Conversation({
   conversationId,
@@ -21,6 +20,7 @@ export default function Conversation({
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
   const [messages, setMessages] = useState<any>([]);
+  const [currentReadMessage, setCurrentReadMessage] = useState<any>(null);
   const [messagePage, setMessagePage] = useState<number>(1);
   const [perMessagePage, setPerMessagePage] = useState<number>(10);
   const [shouldScrollToBottom, setShouldScrollToBottom] =
@@ -30,6 +30,7 @@ export default function Conversation({
   const socket = useSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // search for users
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function Conversation({
       .then((data) => {
         if (data.success) {
           setShouldScrollToBottom(true);
-          setMessages(data.message);
+          setMessages(data.message.reverse());
         }
       });
   }, [conversationId]);
@@ -92,14 +93,94 @@ export default function Conversation({
   useEffect(() => {
     if (!socket) return;
 
-    socket?.on("private_message", (payload) => {
+    const handlePrivateMessage = (payload: any) => {
       setShouldScrollToBottom(true);
-      setMessages((messages) => [...messages, payload.message]);
-    });
+      setMessages((messages: any) => [...messages, payload.message]);
+    };
+
+    const handleMessageRead = (payload: any) => {
+      console.log("handling message read...");
+      setMessages((messages: any) =>
+        messages.map((msg: any) =>
+          msg._id === payload.messageId ? { ...msg, status: "read" } : msg
+        )
+      );
+    };
+
+    socket.on("private_message", handlePrivateMessage);
+    socket.on("message_read", handleMessageRead);
+
     return () => {
-      socket?.off("private_message");
+      socket.off("private_message", handlePrivateMessage);
+      socket.off("message_read", handleMessageRead);
     };
   }, [socket]);
+
+  // Handle message seen when it comes into view
+  useEffect(() => {
+    if (!socket || !conversationId) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute("data-message-id");
+            if (messageId) {
+              const message = messages.find((m: any) => m._id === messageId);
+              // Only mark as seen if it's not our own message and not already read
+              if (
+                message &&
+                message.sender._id !== user?.id &&
+                message.status !== "read"
+              ) {
+                socket.emit("message_read", {
+                  messageId,
+                });
+              }
+            }
+          }
+        });
+      },
+      { threshold: 0.5 } // Trigger when 50% of the message is visible
+    );
+
+    // Observe all message elements
+    Object.values(messageRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [messages, socket, conversationId, user?.id]);
+
+  // Set up message ref callback
+  const setMessageRef = useCallback(
+    (messageId: string, el: HTMLDivElement | null) => {
+      if (el) {
+        messageRefs.current[messageId] = el;
+      } else {
+        delete messageRefs.current[messageId];
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (shouldScrollToBottom) {
+      scrollToBottom();
+      setShouldScrollToBottom(false);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].status === "read") {
+        setCurrentReadMessage(messages[i]);
+        return;
+      }
+    }
+  }, [messages]);
 
   // handle send message
   const handleSendMessage = () => {
@@ -119,13 +200,6 @@ export default function Conversation({
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
-  useEffect(() => {
-    if (shouldScrollToBottom) {
-      scrollToBottom();
-      setShouldScrollToBottom(false);
-    }
-  }, [messages]);
 
   // handle for when the messages are scrolled
   const handleScroll = () => {
@@ -153,7 +227,7 @@ export default function Conversation({
             if (data.message.length === 0) {
               setMessagePage((prev) => Math.max(prev - 1, 1));
             } else {
-              setMessages((prevMessages) => [
+              setMessages((prevMessages: any) => [
                 ...data.message.reverse(),
                 ...prevMessages,
               ]);
@@ -178,7 +252,7 @@ export default function Conversation({
           }}
         />
         <ul className="list-none flex flex-col gap-2">
-          {users.map((user) => {
+          {users.map((user: any) => {
             return (
               <li
                 key={user._id}
@@ -206,15 +280,19 @@ export default function Conversation({
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
-        {messages.map((message) => (
+        {messages.map((message: any) => (
           <div
             key={message._id}
+            ref={(el) => setMessageRef(message._id, el)}
+            data-message-id={message._id}
             className={`p-2 ${
               message.sender._id === user?.id ? "text-right" : "text-left"
             }`}
           >
             <h2 className="text-lg font-bold">{message.sender.displayName}</h2>
             <p>{message.content}</p>
+            {message.sender._id === user?.id &&
+              message._id === currentReadMessage?._id && <i>Read</i>}
           </div>
         ))}
         <div ref={messagesEndRef}></div>
