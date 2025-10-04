@@ -289,7 +289,7 @@ export default function Conversation({
               key={message._id}
               ref={(el) => setMessageRef(message._id, el)}
               data-message-id={message._id}
-              className={`p-2 ${
+              className={`${
                 message.sender._id === user?.id ? "text-right" : "text-left"
               }`}
             >
