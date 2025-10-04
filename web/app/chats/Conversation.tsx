@@ -84,7 +84,7 @@ export default function Conversation({
       .then((data) => {
         if (data.success) {
           setShouldScrollToBottom(true);
-          setMessages(data.message.reverse());
+          setMessages([...data.message].reverse());
         }
       });
   }, [conversationId]);
@@ -228,7 +228,7 @@ export default function Conversation({
               setMessagePage((prev) => Math.max(prev - 1, 1));
             } else {
               setMessages((prevMessages: any) => [
-                ...data.message.reverse(),
+                ...[...data.message].reverse(),
                 ...prevMessages,
               ]);
             }
