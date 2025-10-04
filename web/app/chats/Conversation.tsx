@@ -280,21 +280,44 @@ export default function Conversation({
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
-        {messages.map((message: any) => (
-          <div
-            key={message._id}
-            ref={(el) => setMessageRef(message._id, el)}
-            data-message-id={message._id}
-            className={`p-2 ${
-              message.sender._id === user?.id ? "text-right" : "text-left"
-            }`}
-          >
-            <h2 className="text-lg font-bold">{message.sender.displayName}</h2>
-            <p>{message.content}</p>
-            {message.sender._id === user?.id &&
-              message._id === currentReadMessage?._id && <i>Read</i>}
-          </div>
-        ))}
+        {messages.map((message: any, index: number) => {
+          const showName =
+            index === 0 ||
+            messages[index - 1].sender._id !== message.sender._id;
+          return (
+            <div
+              key={message._id}
+              ref={(el) => setMessageRef(message._id, el)}
+              data-message-id={message._id}
+              className={`p-2 ${
+                message.sender._id === user?.id ? "text-right" : "text-left"
+              }`}
+            >
+              {showName && (
+                <h2 className="text-lg font-bold">
+                  {message.sender.displayName}
+                </h2>
+              )}
+              <div
+                className={`flex ${
+                  message.sender._id === user?.id ? "justify-end" : ""
+                }`}
+              >
+                <p
+                  className={`${
+                    message.sender._id === user?.id
+                      ? "bg-sky-300"
+                      : "bg-stone-300"
+                  } p-2 rounded-md max-w-100`}
+                >
+                  {message.content}
+                </p>
+              </div>
+              {message.sender._id === user?.id &&
+                message._id === currentReadMessage?._id && <i>Read</i>}
+            </div>
+          );
+        })}
         <div ref={messagesEndRef}></div>
       </div>
 
