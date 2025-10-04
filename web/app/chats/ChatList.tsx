@@ -34,6 +34,30 @@ export default function ChatList({
       .catch((err) => console.log(err));
   }, [token]);
 
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    socket.on("private_message", (payload) => {
+      const message = payload.message;
+      const conversationId = message.conversationId;
+      setConversations((prevConvs: any[]) => {
+        const conv = prevConvs.find((conv: any) => conv._id === conversationId);
+        conv.lastMessage = message.content;
+        let newConvs = prevConvs.filter(
+          (conv: any) => conv._id !== conversationId
+        );
+        newConvs = [conv, ...newConvs];
+        return newConvs;
+      });
+    });
+
+    return () => {
+      socket.off("private_message");
+    };
+  }, [socket]);
+
   return (
     <div className="flex flex-col gap-2">
       <button
@@ -44,7 +68,7 @@ export default function ChatList({
       >
         Create new conversation
       </button>
-      {conversations.map((conversation) => {
+      {conversations.map((conversation: any) => {
         // Find the other user in the conversation(not the current user)
         const user1 = conversation.members[0];
         const user2 = conversation.members[1];
