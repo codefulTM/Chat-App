@@ -47,10 +47,10 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-sky-300">
-      <form className="bg-stone-50 p-5" onSubmit={handleSubmit}>
+    <div className="h-screen flex items-center justify-center bg-[var(--background)]">
+      <form className="bg-[var(--surface)] p-5" onSubmit={handleSubmit}>
         {error && (
-          <div className="bg-red-300 py-2 px-2 flex justify-between">
+          <div className="bg-[var(--error)] py-2 px-2 flex justify-between">
             <p>{error}</p>
             <button
               className="hover:cursor-pointer"
@@ -65,7 +65,7 @@ export default function LoginForm() {
             Email:
           </label>
           <input
-            className="w-100 py-2"
+            className="w-100 py-2 border border-[var(--border)]"
             type="email"
             name="email"
             id="email"
@@ -79,7 +79,7 @@ export default function LoginForm() {
             Password:
           </label>
           <input
-            className="w-100 py-2"
+            className="w-100 py-2 border border-[var(--border)]"
             type="password"
             name="password"
             id="password"
@@ -92,7 +92,7 @@ export default function LoginForm() {
         </div>
         <div className="flex justify-center my-2">
           <button
-            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
+            className="bg-[var(--primary)] px-5 py-2 hover:cursor-pointer hover:bg-[var(--primary-light)] w-30"
             type="submit"
           >
             Login
@@ -100,7 +100,7 @@ export default function LoginForm() {
         </div>
         <div className="flex justify-center">
           <button
-            className="bg-sky-300 px-5 py-2 hover:cursor-pointer hover:bg-sky-400 w-30"
+            className="bg-[var(--primary)] px-5 py-2 hover:cursor-pointer hover:bg-[var(--primary-light)] w-30"
             onClick={(e) => {
               e.preventDefault();
               router.push("/register");

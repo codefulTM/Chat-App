@@ -14,7 +14,6 @@ router.get("/", async (req, res) => {
       .sort({ updatedAt: -1 })
       .populate({
         path: "members",
-        select: "displayName avatarUrl",
         model: "User",
       });
     return res.json({

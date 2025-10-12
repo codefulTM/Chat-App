@@ -3,6 +3,7 @@
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
 import { useEffect, useRef, useState, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 
 export default function Conversation({
   conversationId,
@@ -99,7 +100,6 @@ export default function Conversation({
     };
 
     const handleMessageRead = (payload: any) => {
-      console.log("handling message read...");
       setMessages((messages: any) =>
         messages.map((msg: any) =>
           msg._id === payload.messageId ? { ...msg, status: "read" } : msg
@@ -241,7 +241,17 @@ export default function Conversation({
     return (
       <div className="flex flex-col items-center gap-4">
         <input
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className={
+            `w-full px-4 py-2 bg-[var(` +
+            (document.documentElement.classList.contains("dark")
+              ? "--text"
+              : "--background") +
+            `)] border border-[var(--border)] text-[var(` +
+            (document.documentElement.classList.contains("dark")
+              ? "--background"
+              : "--text") +
+            `)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)]`
+          }
           type="search"
           name="user_search"
           id="user_search"
@@ -259,7 +269,7 @@ export default function Conversation({
                 onClick={() => {
                   setToUser({ ...user });
                 }}
-                className="cursor-pointer hover:bg-gray-100 p-2 rounded-md"
+                className="cursor-pointer hover:bg-[var(--primary)] hover:text-[var(--background)] p-2 rounded-md"
               >
                 {user.displayName}
               </li>
@@ -303,15 +313,47 @@ export default function Conversation({
                   message.sender._id === user?.id ? "justify-end" : ""
                 }`}
               >
-                <p
+                <div
                   className={`${
                     message.sender._id === user?.id
-                      ? "bg-sky-300"
-                      : "bg-stone-300"
-                  } p-2 rounded-md max-w-100`}
+                      ? "bg-[var(--primary)]"
+                      : document.documentElement.classList.contains("dark")
+                      ? "bg-[var(--secondary)]"
+                      : "bg-[var(--surface)]"
+                  } p-2 rounded-md max-w-100 prose`}
                 >
-                  {message.content}
-                </p>
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p {...props} className="m-0" />
+                      ),
+                      code({
+                        node,
+                        inline,
+                        className,
+                        children,
+                        ...props
+                      }: any) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        return !inline ? (
+                          <div className="overflow-x-auto">
+                            <pre className="bg-gray-800 text-gray-100 p-3 text-sm whitespace-pre-wrap break-words">
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            </pre>
+                          </div>
+                        ) : (
+                          <code className="bg-gray-200 px-1 rounded" {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
               </div>
               {message.sender._id === user?.id &&
                 message._id === currentReadMessage?._id && <i>Read</i>}
@@ -328,7 +370,13 @@ export default function Conversation({
           name="submitText"
           id="submitText"
           placeholder="Enter text here"
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className={
+            `w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)] text-[var(` +
+            (document.documentElement.classList.contains("dark")
+              ? "--text"
+              : "--background") +
+            `)]`
+          }
           value={text}
           onChange={(e) => {
             setText(e.target.value);

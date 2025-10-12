@@ -31,11 +31,11 @@ export default function ChatPage() {
   return (
     <SocketProvider token={token}>
       <div className="flex flex-col h-screen">
-        <header className="flex-none h-12 w-screen bg-sky-200 flex justify-end items-center">
+        <header className="flex-none h-12 w-screen bg-[var(--primary)] flex justify-end items-center">
           <div className="relative">
             <FontAwesomeIcon
               icon={faUser}
-              className="!w-9 !h-9 text-white mx-2 hover:cursor-pointer"
+              className="!w-9 !h-9 text-[var(--background)] mx-2 hover:cursor-pointer"
               onClick={() => {
                 setIsMenuVisible((prev) => {
                   const newValue = !prev;
@@ -55,6 +55,7 @@ export default function ChatPage() {
             <ChatList
               token={token}
               setConversationId={setConversationId}
+              conversationId={conversationId}
               toUser={toUser}
               setToUser={setToUser}
             />
