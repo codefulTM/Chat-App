@@ -71,6 +71,8 @@ export default function Conversation({
 
   // get messages from conversation
   useEffect(() => {
+    if (!conversationId) return;
+    
     setMessages([]);
     setMessagePage(1);
     fetch(
@@ -84,11 +86,14 @@ export default function Conversation({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setShouldScrollToBottom(true);
           setMessages([...data.message].reverse());
+          // Use setTimeout to ensure the DOM has updated before scrolling
+          setTimeout(() => {
+            scrollToBottom();
+          }, 0);
         }
       });
-  }, [conversationId]);
+  }, [conversationId, token]);
 
   // handle socket.io events
   useEffect(() => {
@@ -167,9 +172,12 @@ export default function Conversation({
   );
 
   useEffect(() => {
-    if (shouldScrollToBottom) {
-      scrollToBottom();
-      setShouldScrollToBottom(false);
+    if (messages.length > 0) {
+      // Scroll to bottom when new messages arrive
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 
