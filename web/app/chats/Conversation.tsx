@@ -86,11 +86,13 @@ export default function Conversation({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setMessages([...data.message].reverse());
-          // Use setTimeout to ensure the DOM has updated before scrolling
-          setTimeout(() => {
+          const reversedMessages = [...data.message].reverse();
+          setMessages(reversedMessages);
+          // Always scroll to bottom when loading a conversation
+          const scrollTimer = setTimeout(() => {
             scrollToBottom();
-          }, 0);
+          }, 100);
+          return () => clearTimeout(scrollTimer);
         }
       });
   }, [conversationId, token]);
@@ -100,8 +102,18 @@ export default function Conversation({
     if (!socket) return;
 
     const handlePrivateMessage = (payload: any) => {
-      setShouldScrollToBottom(true);
-      setMessages((messages: any) => [...messages, payload.message]);
+      setMessages((messages: any) => {
+        const newMessages = [...messages, payload.message];
+        // Only auto-scroll if the user is near the bottom
+        if (messagesContainerRef.current) {
+          const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+          const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
+          if (isNearBottom) {
+            setTimeout(() => scrollToBottom(), 0);
+          }
+        }
+        return newMessages;
+      });
     };
 
     const handleMessageRead = (payload: any) => {
@@ -171,15 +183,8 @@ export default function Conversation({
     []
   );
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      // Scroll to bottom when new messages arrive
-      const timer = setTimeout(() => {
-        scrollToBottom();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [messages]);
+  // Remove the auto-scroll effect that was causing issues
+  // We'll handle scrolling manually in specific cases
 
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -205,9 +210,14 @@ export default function Conversation({
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+  }, []);
 
   // handle for when the messages are scrolled
   const handleScroll = () => {
