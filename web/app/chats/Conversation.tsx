@@ -2,7 +2,7 @@
 
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
 export default function Conversation({
@@ -21,7 +21,9 @@ export default function Conversation({
   const [displayName, setDisplayName] = useState<string>("");
   const [users, setUsers] = useState<any>([]);
   const [messages, setMessages] = useState<any>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentReadMessage, setCurrentReadMessage] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [messagePage, setMessagePage] = useState<number>(1);
   const [perMessagePage, setPerMessagePage] = useState<number>(10);
   const [shouldScrollToBottom, setShouldScrollToBottom] =
@@ -72,7 +74,7 @@ export default function Conversation({
   // get messages from conversation
   useEffect(() => {
     if (!conversationId) return;
-    
+
     setMessages([]);
     setMessagePage(1);
     fetch(
@@ -106,7 +108,8 @@ export default function Conversation({
         const newMessages = [...messages, payload.message];
         // Only auto-scroll if the user is near the bottom
         if (messagesContainerRef.current) {
-          const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+          const { scrollTop, scrollHeight, clientHeight } =
+            messagesContainerRef.current;
           const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
           if (isNearBottom) {
             setTimeout(() => scrollToBottom(), 0);
@@ -196,17 +199,46 @@ export default function Conversation({
   }, [messages]);
 
   // handle send message
-  const handleSendMessage = () => {
-    if (!text.trim()) return;
+  const handleSendMessage = async () => {
+    if ((!text.trim() && !selectedFile) || !toUser) {
+      return;
+    }
     try {
+      let fileUrl = "";
+      if (selectedFile) {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/upload`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+        const data = await response.json();
+        if (data.success) {
+          fileUrl = data.fileUrl;
+        }
+      }
+
       socket?.emit("private_message", {
         toUserId: toUser._id,
         conversationId: conversationId,
         content: text,
+        fileUrl: fileUrl,
+        fileName: selectedFile?.name || "",
+        type: selectedFile ? "file" : "text",
       });
       setText("");
+      setSelectedFile(null);
+      setIsUploading(false);
     } catch (err) {
       console.error("Error sending message: ", err);
+      setIsUploading(false);
     }
   };
 
@@ -252,6 +284,15 @@ export default function Conversation({
             }
           }
         });
+    }
+  };
+
+  // handle file select
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      e.target.value = "";
     }
   };
 
@@ -327,51 +368,73 @@ export default function Conversation({
                 </h2>
               )}
               <div
-                className={`flex ${
-                  message.sender._id === user?.id ? "justify-end" : ""
+                className={`flex flex-col ${
+                  message.sender._id === user?.id ? "items-end" : "items-start"
                 }`}
               >
-                <div
-                  className={`${
-                    message.sender._id === user?.id
-                      ? "bg-[var(--primary)]"
-                      : document.documentElement.classList.contains("dark")
-                      ? "bg-[var(--secondary)]"
-                      : "bg-[var(--surface)]"
-                  } p-2 rounded-md max-w-100 prose`}
-                >
-                  <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p {...props} className="m-0" />
-                      ),
-                      code({
-                        node,
-                        inline,
-                        className,
-                        children,
-                        ...props
-                      }: any) {
-                        const match = /language-(\w+)/.exec(className || "");
-                        return !inline ? (
-                          <div className="overflow-x-auto">
-                            <pre className="bg-gray-800 text-gray-100 p-3 text-sm whitespace-pre-wrap break-words">
+                {message.content !== "" && (
+                  <div
+                    className={`${
+                      message.sender._id === user?.id
+                        ? "bg-[var(--primary)]"
+                        : document.documentElement.classList.contains("dark")
+                        ? "bg-[var(--secondary)]"
+                        : "bg-[var(--surface)]"
+                    } p-2 rounded-md max-w-100 prose`}
+                  >
+                    <ReactMarkdown
+                      components={{
+                        code({ node, className, children, ...props }) {
+                          const isInline =
+                            !className || !className.includes("language-");
+
+                          return !isInline ? (
+                            <pre className="overflow-x-auto p-2 bg-gray-100 dark:bg-gray-800 text-white rounded-md my-2 ">
                               <code className={className} {...props}>
                                 {children}
                               </code>
                             </pre>
-                          </div>
-                        ) : (
-                          <code className="bg-gray-200 px-1 rounded" {...props}>
-                            {children}
-                          </code>
-                        );
-                      },
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
+                          ) : (
+                            <code
+                              className={`${className} inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm align-baseline text-white`}
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        },
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                    {/* {message.content} */}
+                  </div>
+                )}
+                {message.fileUrl && (
+                  <div className="mt-2">
+                    <a
+                      href={`${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline flex items-center"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                      {message.fileName || "Download File"}
+                    </a>
+                  </div>
+                )}
               </div>
               {message.sender._id === user?.id &&
                 message._id === currentReadMessage?._id && <i>Read</i>}
@@ -382,31 +445,58 @@ export default function Conversation({
       </div>
 
       {/* Input luôn dính dưới */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t flex items-center">
+        <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full">
+          <input
+            type="file"
+            className="hidden"
+            onChange={handleFileSelect}
+            disabled={isUploading}
+          />
+          <svg
+            className="w-6 h-6 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+            />
+          </svg>
+        </label>
         <input
           type="text"
           name="submitText"
           id="submitText"
           placeholder="Enter text here"
-          className={
-            `w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)] text-[var(` +
-            (document.documentElement.classList.contains("dark")
-              ? "--text"
-              : "--background") +
-            `)]`
-          }
+          className={`w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)] text-[var(--text)]`}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && text.trim() !== "") {
+            if (e.key === "Enter") {
               handleSendMessage();
               setText("");
             }
           }}
+          disabled={isUploading}
         />
       </div>
+      {selectedFile && (
+        <div className="px-4 pb-2 flex items-center text-sm text-gray-600">
+          <span className="truncate max-w-xs">{selectedFile.name}</span>
+          <button
+            onClick={() => setSelectedFile(null)}
+            className="ml-2 text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }

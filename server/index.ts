@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
@@ -29,7 +33,40 @@ if (!process.env.MONGO_URI) {
 }
 mongoose.connect(process.env.MONGO_URI);
 
+// Configure file storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = "uploads/";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage });
+
 // api routes
+// Add a new route for file uploads
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res
+      .status(400)
+      .json({ success: false, message: "No file uploaded" });
+  }
+  res.json({
+    success: true,
+    fileUrl: `/uploads/${req.file.filename}`,
+    fileName: req.file.originalname,
+  });
+});
+
+// Serve uploaded files
+app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authRouter);
 app.use("/api/conversations", jwtMiddleware, conversationsRouter);
 app.use("/api/users", jwtMiddleware, usersRouter);
@@ -84,7 +121,7 @@ io.on("connection", async (socket) => {
 
   socket.on("private_message", async (payload, ack) => {
     try {
-      // payload: { toUserId, conversationId?, content }
+      // payload: { toUserId, conversationId?, content, fileUrl?, fileName?, type? }
       // create a new conversation if there is no conversation id
       if (!payload.conversationId) {
         let conv = await ConversationModel.findOne({
@@ -108,6 +145,8 @@ io.on("connection", async (socket) => {
         receiver: payload.toUserId,
         content: payload.content,
         type: payload.type || "text",
+        fileUrl: payload.fileUrl || "",
+        fileName: payload.fileName || "",
       });
       message = await message.populate({
         path: "sender",
@@ -136,7 +175,6 @@ io.on("connection", async (socket) => {
 
       // if the receiver is not AI, send to receiver if online
       if (!receiverIsGemini) {
-        console.log("The receiver is not AI");
         if (onlineMap.has(payload.toUserId) && payload.toUserId !== userId) {
           const receiverSockets = onlineMap.get(payload.toUserId);
           for (const socketId of receiverSockets) {
@@ -158,6 +196,8 @@ io.on("connection", async (socket) => {
           receiver: userId,
           content: response,
           type: "text",
+          fileUrl: "",
+          fileName: "",
         });
         message = await message.populate({
           path: "sender",
