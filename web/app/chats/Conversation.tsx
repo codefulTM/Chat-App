@@ -318,7 +318,6 @@ export default function Conversation({
       }/api/conversations/${conversationId}/messages?limit=${perMessagePage}&skip=${
         (newMessagePage - 1) * perMessagePage
       }`;
-      console.log(url);
       fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -331,10 +330,21 @@ export default function Conversation({
             if (data.message.length === 0) {
               setMessagePage((prev) => Math.max(prev - 1, 1));
             } else {
-              setMessages((prevMessages: any) => [
-                ...[...data.message].reverse(),
-                ...prevMessages,
-              ]);
+              // Get the first message element before updating messages
+              const firstMessageElement = messages.length > 0 ? messageRefs.current[messages[0]._id] : null;
+
+              setMessages((prevMessages: any) => {
+                const newMessages = [...[...data.message].reverse(), ...prevMessages];
+
+                // After messages are updated, scroll to maintain position
+                setTimeout(() => {
+                  if (firstMessageElement) {
+                    firstMessageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+                  }
+                }, 0);
+
+                return newMessages;
+              });
             }
           }
         });
@@ -444,7 +454,13 @@ export default function Conversation({
               }`}
             >
               {showName && (
-                <div className={`flex items-center gap-2 mb-1 ${message.sender._id === user?.id ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`flex items-center gap-2 mb-1 ${
+                    message.sender._id === user?.id
+                      ? "justify-end"
+                      : "justify-start"
+                  }`}
+                >
                   <h2 className="text-lg font-bold">
                     {message.sender.displayName}
                   </h2>
