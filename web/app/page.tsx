@@ -164,6 +164,12 @@ export default function Home() {
             >
               Trải nghiệm ngay
             </Link>
+            <Link
+              href="/chats?gemini=true"
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors duration-200"
+            >
+              💬 Chat với Gemini AI
+            </Link>
           </div>
         </div>
       </section>

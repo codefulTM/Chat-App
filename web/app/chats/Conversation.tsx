@@ -65,7 +65,19 @@ export default function Conversation({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setUsers(data.message);
+          // Find Gemini user in the results instead of creating it manually
+          const geminiUser = data.message.find(
+            (user: any) => user.username === "gemini"
+          );
+          if (geminiUser) {
+            // Filter out existing gemini user and add our found one
+            const filteredUsers = data.message.filter(
+              (user: any) => user.username !== "gemini"
+            );
+            setUsers([...filteredUsers, geminiUser]);
+          } else {
+            setUsers(data.message);
+          }
         }
       });
   }, [displayName, token]);
@@ -75,20 +87,43 @@ export default function Conversation({
     if (!toUser) {
       return;
     }
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${toUser._id}`,
-      {
+
+    // Special handling for Gemini AI
+    if (toUser.username === "gemini") {
+      // Create or find conversation with Gemini
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations/gemini`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setConversationId(data.message._id);
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setConversationId(data.message._id);
+          }
+        })
+        .catch((err) => {
+          console.error("Error creating Gemini conversation:", err);
+        });
+    } else {
+      // Regular user conversation
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${toUser._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setConversationId(data.message._id);
+          }
+        });
+    }
   }, [toUser, token]);
 
   // get messages from conversation
@@ -244,7 +279,6 @@ export default function Conversation({
           fileUrl = data.fileUrl;
         }
       }
-
       socket?.emit("private_message", {
         toUserId: toUser._id,
         conversationId: conversationId,
@@ -356,7 +390,39 @@ export default function Conversation({
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Header */}
-      <h1 className="text-2xl font-bold p-4 border-b">{toUser?.displayName}</h1>
+      <div
+        className={`p-4 border-b ${
+          toUser?.username === "gemini"
+            ? "bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20"
+            : ""
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          {toUser?.username === "gemini" && (
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          )}
+          <h1 className="text-2xl font-bold">
+            {toUser?.displayName}
+            {toUser?.username === "gemini" && (
+              <span className="ml-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-normal">
+                (AI Assistant)
+              </span>
+            )}
+          </h1>
+        </div>
+      </div>
 
       {/* Messages chiếm toàn bộ phần còn lại */}
       <div
@@ -378,9 +444,26 @@ export default function Conversation({
               }`}
             >
               {showName && (
-                <h2 className="text-lg font-bold">
-                  {message.sender.displayName}
-                </h2>
+                <div className={`flex items-center gap-2 mb-1 ${message.sender._id === user?.id ? "justify-end" : "justify-start"}`}>
+                  <h2 className="text-lg font-bold">
+                    {message.sender.displayName}
+                  </h2>
+                  {message.sender.username === "gemini" && (
+                    <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-2.5 h-2.5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               )}
               <div
                 className={`flex flex-col ${
@@ -392,10 +475,12 @@ export default function Conversation({
                     className={`${
                       message.sender._id === user?.id
                         ? "bg-[var(--primary)]"
+                        : message.sender.username === "gemini"
+                        ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-700"
                         : document.documentElement.classList.contains("dark")
                         ? "bg-[var(--secondary)]"
                         : "bg-[var(--surface)]"
-                    } p-2 rounded-md max-w-100 prose`}
+                    } p-3 rounded-lg max-w-100 shadow-sm`}
                   >
                     <ReactMarkdown
                       components={{
@@ -422,7 +507,6 @@ export default function Conversation({
                     >
                       {message.content}
                     </ReactMarkdown>
-                    {/* {message.content} */}
                   </div>
                 )}
                 {message.fileUrl &&
@@ -437,7 +521,11 @@ export default function Conversation({
                         <img
                           src={`${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`}
                           alt={message.fileName || "Image"}
-                          className="max-w-xs max-h-64 rounded-md cursor-pointer hover:opacity-90"
+                          className={`max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
+                            message.sender.username === "gemini"
+                              ? "ring-2 ring-purple-200 dark:ring-purple-700"
+                              : ""
+                          }`}
                           onClick={() =>
                             window.open(
                               `${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`,
@@ -446,6 +534,22 @@ export default function Conversation({
                           }
                           style={{ objectFit: "cover" }}
                         />
+                        {message.sender.username === "gemini" && (
+                          <div className="mt-1 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                            <svg
+                              className="w-3 h-3"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Generated by Gemini
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="mt-2">

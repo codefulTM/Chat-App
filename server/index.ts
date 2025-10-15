@@ -193,48 +193,53 @@ io.on("connection", async (socket) => {
 
           if (payload.fileUrl && payload.type === "file") {
             // Check if it's an image file
-            const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(payload.fileName || "");
+            const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(
+              payload.fileName || ""
+            );
 
             if (isImage) {
               // Read the uploaded image file
               const imagePath = path.join(process.cwd(), payload.fileUrl);
               if (fs.existsSync(imagePath)) {
                 const imageBuffer = fs.readFileSync(imagePath);
-                const imageBase64 = imageBuffer.toString('base64');
+                const imageBase64 = imageBuffer.toString("base64");
 
                 // Determine MIME type based on file extension
-                const ext = path.extname(payload.fileName || '').toLowerCase();
+                const ext = path.extname(payload.fileName || "").toLowerCase();
                 const mimeTypes: { [key: string]: string } = {
-                  '.jpg': 'image/jpeg',
-                  '.jpeg': 'image/jpeg',
-                  '.png': 'image/png',
-                  '.gif': 'image/gif',
-                  '.bmp': 'image/bmp',
-                  '.webp': 'image/webp'
+                  ".jpg": "image/jpeg",
+                  ".jpeg": "image/jpeg",
+                  ".png": "image/png",
+                  ".gif": "image/gif",
+                  ".bmp": "image/bmp",
+                  ".webp": "image/webp",
                 };
-                const mimeType = mimeTypes[ext] || 'image/jpeg';
-
-                // Use Gemini Pro Vision model for image processing
-                const visionModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+                const mimeType = mimeTypes[ext] || "image/jpeg";
 
                 // Create content with image and text
                 const imagePart = {
                   inlineData: {
                     data: imageBase64,
-                    mimeType: mimeType
-                  }
+                    mimeType: mimeType,
+                  },
                 };
 
-                const textPart = payload.content || "What can you see in this image? Please describe it in detail.";
+                const textPart =
+                  payload.content ||
+                  "What can you see in this image? Please describe it in detail.";
 
-                result = await visionModel.generateContent([textPart, imagePart]);
+                result = await model.generateContent([textPart, imagePart]);
               } else {
                 // Fallback to regular text if image file not found
-                result = await model.generateContent(`User sent an image but it couldn't be processed. They said: ${payload.content}`);
+                result = await model.generateContent(
+                  `User sent an image but it couldn't be processed. They said: ${payload.content}`
+                );
               }
             } else {
               // Non-image file, handle as regular text with file info
-              result = await model.generateContent(`${payload.content}\n\nUser sent a file: ${payload.fileName}`);
+              result = await model.generateContent(
+                `${payload.content}\n\nUser sent a file: ${payload.fileName}`
+              );
             }
           } else {
             // Regular text message
@@ -273,10 +278,11 @@ io.on("connection", async (socket) => {
           // Send error message back to user
           io.to(socket.id).emit("private_message", {
             message: {
-              content: "Sorry, I encountered an error processing your request. Please try again.",
+              content:
+                "Sorry, I encountered an error processing your request. Please try again.",
               sender: { displayName: "Gemini", _id: geminiId },
-              type: "text"
-            }
+              type: "text",
+            },
           });
         }
       }
