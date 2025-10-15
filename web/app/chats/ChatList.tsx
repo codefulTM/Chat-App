@@ -3,6 +3,8 @@
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
 import { useEffect, useState } from "react";
+import OnlineUsers from "./OnlineUsers";
+import MessageCard from "./MessageCard";
 
 export default function ChatList({
   token,
@@ -116,30 +118,11 @@ export default function ChatList({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex overflow-x-auto py-2 gap-3 px-1 hide-scrollbar">
-        {Array.from(onlineUsers.values()).map((onlineUser) => {
-          const lastName = onlineUser.displayName?.split(" ").pop();
-          return (
-            onlineUser._id !== user?.id && (
-              <div
-                key={onlineUser._id}
-                className="flex flex-col items-center shrink-0"
-                title={onlineUser.displayName} // Show full name on hover
-                onClick={() => {
-                  handleBubbleClick(onlineUser._id);
-                }}
-              >
-                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
-                  {lastName?.[0]?.toUpperCase() || "?"}
-                </div>
-                <span className="text-xs mt-1 truncate max-w-[50px]">
-                  {lastName}
-                </span>
-              </div>
-            )
-          );
-        })}
-      </div>
+      <OnlineUsers
+        onlineUsers={onlineUsers}
+        user={user}
+        onBubbleClick={handleBubbleClick}
+      />
       <button
         onClick={() => {
           setConversationId(null);
@@ -169,39 +152,18 @@ export default function ChatList({
         }
 
         return (
-          <div
+          <MessageCard
             key={conversation._id}
-            onClick={() => {
+            conversation={conversation}
+            onMessageCardClick={() => {
               setConversationId(conversation._id);
               setToUser(otherUser);
             }}
-            className={
-              "p-4 rounded-lg shadow-md hover:shadow-lg hover:bg-[var(--primary-light)] hover:text-[var(--background)] " +
-              (conversation._id === conversationId
-                ? "bg-[var(--primary)] text-[var(--background)]"
-                : "bg-[var(--surface)]")
-            }
-          >
-            <div className="flex">
-              <h1 className="text-lg font-bold mr-2">
-                {otherUser?.displayName}
-              </h1>
-              {otherUser?.username === "gemini" ? (
-                <span className="font-bold bg-[var(--primary)] px-2 py-1 rounded-md text-xs items-center flex justify-center">
-                  AI
-                </span>
-              ) : (
-                isOnline &&
-                otherUser?._id !== user?.id && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full ml-1"></span>
-                )
-              )}
-            </div>
-            <p className="text-sm">
-              {conversation.lastMessage.slice(0, 50) +
-                (conversation.lastMessage.length > 50 ? "..." : "")}
-            </p>
-          </div>
+            currentConversationId={conversationId}
+            isOnline={isOnline}
+            otherUser={otherUser}
+            currentUser={user}
+          />
         );
       })}
     </div>

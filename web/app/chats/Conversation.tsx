@@ -29,11 +29,31 @@ export default function Conversation({
   const [shouldScrollToBottom, setShouldScrollToBottom] =
     useState<boolean>(false);
   const [text, setText] = useState<string>("");
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const { user } = useAuth();
   const socket = useSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Theo dõi thay đổi theme
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"));
+    };
+
+    // Kiểm tra lần đầu
+    checkDarkMode();
+
+    // Tạo MutationObserver để theo dõi thay đổi class
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // search for users
   useEffect(() => {
@@ -300,18 +320,13 @@ export default function Conversation({
     return (
       <div className="flex flex-col items-center gap-4">
         <input
-          className={
-            `w-full px-4 py-2 bg-[var(` +
-            (document.documentElement.classList.contains("dark")
-              ? "--text"
-              : "--background") +
-            `)] border border-[var(--border)] text-[var(` +
-            (document.documentElement.classList.contains("dark")
-              ? "--background"
-              : "--text") +
-            `)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)]`
-          }
+          className={`w-full px-4 py-2 ${
+            isDarkMode ? "bg-[var(--surface)]" : "bg-white"
+          } border border-[var(--border)] ${
+            isDarkMode ? "text-[var(--text)]" : "text-[var(--text)]"
+          } rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)]`}
           type="search"
+          autoComplete="off"
           name="user_search"
           id="user_search"
           placeholder="Search users..."
@@ -410,31 +425,54 @@ export default function Conversation({
                     {/* {message.content} */}
                   </div>
                 )}
-                {message.fileUrl && (
-                  <div className="mt-2">
-                    <a
-                      href={`${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline flex items-center"
-                    >
-                      <svg
-                        className="w-5 h-5 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                {message.fileUrl &&
+                  (() => {
+                    // Check if file is an image
+                    const isImage =
+                      message.fileName &&
+                      /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(message.fileName);
+
+                    return isImage ? (
+                      <div className="mt-2">
+                        <img
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`}
+                          alt={message.fileName || "Image"}
+                          className="max-w-xs max-h-64 rounded-md cursor-pointer hover:opacity-90"
+                          onClick={() =>
+                            window.open(
+                              `${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`,
+                              "_blank"
+                            )
+                          }
+                          style={{ objectFit: "cover" }}
                         />
-                      </svg>
-                      {message.fileName || "Download File"}
-                    </a>
-                  </div>
-                )}
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_API_URL}${message.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline flex items-center"
+                        >
+                          <svg
+                            className="w-5 h-5 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                          </svg>
+                          {message.fileName || "Download File"}
+                        </a>
+                      </div>
+                    );
+                  })()}
               </div>
               {message.sender._id === user?.id &&
                 message._id === currentReadMessage?._id && <i>Read</i>}
@@ -445,8 +483,8 @@ export default function Conversation({
       </div>
 
       {/* Input luôn dính dưới */}
-      <div className="p-4 border-t flex items-center">
-        <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full">
+      <div className="p-4 border-t flex items-center gap-2">
+        <label className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
           <input
             type="file"
             className="hidden"
@@ -454,7 +492,7 @@ export default function Conversation({
             disabled={isUploading}
           />
           <svg
-            className="w-6 h-6 text-gray-500"
+            className="w-6 h-6 text-gray-500 dark:text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -467,24 +505,51 @@ export default function Conversation({
             />
           </svg>
         </label>
-        <input
-          type="text"
-          name="submitText"
-          id="submitText"
-          placeholder="Enter text here"
-          className={`w-full px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md shadow-sm focus:ring-[var(--primary)] focus:border-[var(--primary)] text-[var(--text)]`}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSendMessage();
-              setText("");
-            }
-          }}
-          disabled={isUploading}
-        />
+
+        <div className="relative flex-1">
+          <input
+            type="text"
+            name="submitText"
+            id="submitText"
+            placeholder="Nhập tin nhắn..."
+            className={`w-full pr-12 pl-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-full shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] text-[var(--text)]`}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+                setText("");
+              }
+            }}
+            disabled={isUploading}
+          />
+
+          <button
+            onClick={() => {
+              if (text.trim() || selectedFile) {
+                handleSendMessage();
+                setText("");
+              }
+            }}
+            disabled={isUploading || (!text.trim() && !selectedFile)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-white bg-[var(--primary)] rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       {selectedFile && (
         <div className="px-4 pb-2 flex items-center text-sm text-gray-600">

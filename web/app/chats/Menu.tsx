@@ -1,3 +1,5 @@
+"use client";
+
 import { useRouter } from "next/navigation";
 import { destroyCookie } from "nookies";
 import { useState } from "react";
@@ -20,9 +22,7 @@ export default function Menu({ setIsMenuVisible }: { setIsMenuVisible: any }) {
         Sign out
       </span>
       <div className="relative group">
-        <span
-          className="block p-2 hover:bg-[var(--primary)] cursor-pointer flex items-center text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200"
-        >
+        <span className="block p-2 hover:bg-[var(--primary)] cursor-pointer flex items-center text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200">
           <span className="mr-2">▼</span>
           Theme
         </span>
