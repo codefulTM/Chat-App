@@ -24,12 +24,12 @@ export default function Conversation({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentReadMessage, setCurrentReadMessage] = useState<any>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [messagePage, setMessagePage] = useState<number>(1);
-  const [perMessagePage, setPerMessagePage] = useState<number>(10);
-  const [shouldScrollToBottom, setShouldScrollToBottom] =
-    useState<boolean>(false);
   const [text, setText] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [messagePage, setMessagePage] = useState<number>(1);
+  const [perMessagePage, setPerMessagePage] = useState<number>(10);
+  const [isConversationReady, setIsConversationReady] =
+    useState<boolean>(false);
   const { user } = useAuth();
   const socket = useSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -85,6 +85,7 @@ export default function Conversation({
   // get conversation info
   useEffect(() => {
     if (!toUser) {
+      setIsConversationReady(false);
       return;
     }
 
@@ -102,6 +103,7 @@ export default function Conversation({
         .then((data) => {
           if (data.success) {
             setConversationId(data.message._id);
+            setIsConversationReady(true); // Mark conversation as ready
           }
         })
         .catch((err) => {
@@ -121,6 +123,7 @@ export default function Conversation({
         .then((data) => {
           if (data.success) {
             setConversationId(data.message._id);
+            setIsConversationReady(true); // Mark conversation as ready
           }
         });
     }
@@ -128,7 +131,7 @@ export default function Conversation({
 
   // get messages from conversation
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !isConversationReady) return;
 
     setMessages([]);
     setMessagePage(1);
@@ -148,11 +151,11 @@ export default function Conversation({
           // Always scroll to bottom when loading a conversation
           const scrollTimer = setTimeout(() => {
             scrollToBottom();
-          }, 100);
+          }, 200); // Increased delay for Gemini conversations
           return () => clearTimeout(scrollTimer);
         }
       });
-  }, [conversationId, token]);
+  }, [conversationId, token, isConversationReady]);
 
   // handle socket.io events
   useEffect(() => {
@@ -331,15 +334,24 @@ export default function Conversation({
               setMessagePage((prev) => Math.max(prev - 1, 1));
             } else {
               // Get the first message element before updating messages
-              const firstMessageElement = messages.length > 0 ? messageRefs.current[messages[0]._id] : null;
+              const firstMessageElement =
+                messages.length > 0
+                  ? messageRefs.current[messages[0]._id]
+                  : null;
 
               setMessages((prevMessages: any) => {
-                const newMessages = [...[...data.message].reverse(), ...prevMessages];
+                const newMessages = [
+                  ...[...data.message].reverse(),
+                  ...prevMessages,
+                ];
 
                 // After messages are updated, scroll to maintain position
                 setTimeout(() => {
                   if (firstMessageElement) {
-                    firstMessageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+                    firstMessageElement.scrollIntoView({
+                      behavior: "auto",
+                      block: "start",
+                    });
                   }
                 }, 0);
 
