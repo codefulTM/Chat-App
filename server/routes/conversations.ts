@@ -34,9 +34,7 @@ router.get("/:toUserId", async (req, res) => {
   const toUserId = req.params.toUserId;
   try {
     let data = await ConversationModel.findOne({
-      members: {
-        $all: [userId, toUserId],
-      },
+      $or: [{ members: [userId, toUserId] }, { members: [toUserId, userId] }],
     });
     if (!data) {
       data = await ConversationModel.create({

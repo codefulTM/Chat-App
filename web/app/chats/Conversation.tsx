@@ -88,7 +88,7 @@ export default function Conversation({
       setIsConversationReady(false);
       return;
     }
-
+    // console.log(toUser);
     // Special handling for Gemini AI
     if (toUser.username === "gemini") {
       // Create or find conversation with Gemini
@@ -162,6 +162,7 @@ export default function Conversation({
     if (!socket) return;
 
     const handlePrivateMessage = (payload: any) => {
+      // console.log(payload);
       setMessages((messages: any) => {
         const newMessages = [...messages, payload.message];
         // Only auto-scroll if the user is near the bottom

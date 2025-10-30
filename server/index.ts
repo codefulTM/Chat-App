@@ -16,10 +16,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import UserModel from "./models/User.js";
 import ConversationModel from "./models/Conversation.js";
 import MessageModel from "./models/Message.js";
+import FriendshipModel from "./models/Friendship.js";
 
 import authRouter from "./routes/auth.js";
 import conversationsRouter from "./routes/conversations.js";
 import usersRouter from "./routes/users.js";
+import friendshipRouter from "./routes/friendship.js";
 import jwtMiddleware from "./middlewares/jwtMiddleware.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -70,6 +72,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authRouter);
 app.use("/api/conversations", jwtMiddleware, conversationsRouter);
 app.use("/api/users", jwtMiddleware, usersRouter);
+app.use("/api/friendships", jwtMiddleware, friendshipRouter);
 
 // attach socket.io server
 const server = http.createServer(app);
@@ -91,6 +94,7 @@ io.use(async (socket, next) => {
       return next(new Error("The JWT_SECRET is not found"));
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    // console.log(payload);
     if (typeof payload === "string" || !payload.id) {
       return next(new Error("Invalid token payload"));
     }
@@ -107,17 +111,34 @@ io.on("connection", async (socket) => {
   // Set the user to online and attach the socket to that user
   const userId = socket.userId;
 
-  const onlineUser = await UserModel.findByIdAndUpdate(userId, {
-    isOnline: true,
-  });
-
-  // notify all users that the current user is online
-  io.emit("user_online", onlineUser);
-
   if (!onlineMap.has(userId)) {
     onlineMap.set(userId, new Set());
   }
   onlineMap.get(userId).add(socket.id);
+
+  const onlineUser = await UserModel.findByIdAndUpdate(userId, {
+    isOnline: true,
+  });
+
+  // Lấy danh sách bạn bè của người dùng
+  const friendships = await FriendshipModel.find({
+    $or: [
+      { senderId: userId, status: "accepted" },
+      { receiverId: userId, status: "accepted" },
+    ],
+  }).populate("senderId receiverId");
+
+  // Lấy danh sách ID bạn bè
+  const friendIds = friendships.map((friendship) =>
+    friendship.senderId._id.toString() === userId
+      ? friendship.receiverId._id.toString()
+      : friendship.senderId._id.toString()
+  );
+
+  // Gửi sự kiện user_online cho từng người bạn
+  friendIds.forEach((friendId) => {
+    io.to(onlineMap.get(friendId) || []).emit("user_online", onlineUser);
+  });
 
   socket.on("private_message", async (payload, ack) => {
     try {

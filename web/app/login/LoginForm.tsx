@@ -1,14 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { setCookie } from "nookies";
 import { FormEvent, useState } from "react";
+import useSocket from "@/hooks/useSocket";
+import useAuth from "@/hooks/useAuth";
+import { parseCookies } from "nookies";
 
 export default function LoginForm() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const socket = useSocket();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,12 +35,8 @@ export default function LoginForm() {
       if (data.success) {
         // attach jwt token to cookie
         const token = data.message;
-        const cookieOptions = {
-          sameSite: "strict",
-          maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-          path: "/",
-        };
-        setCookie(null, "jwt", token, cookieOptions);
+        signIn(token);
+
         router.push("/chats");
       } else {
         setError(data.message);

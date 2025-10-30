@@ -4,7 +4,10 @@ import UserModel from "../models/User.js";
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const name = typeof req.query.name === "string" ? req.query.name : "";
+  const name =
+    req.query.name && typeof req.query.name === "string"
+      ? req.query.name.trim()
+      : "";
   return res.json({
     success: true,
     message: await UserModel.find({

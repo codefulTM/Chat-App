@@ -33,6 +33,7 @@ export default function ChatList({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
+          console.log(data.message);
           setConversations(data.message);
         }
       })
@@ -60,13 +61,38 @@ export default function ChatList({
     socket.on("private_message", (payload) => {
       const message = payload.message;
       const conversationId = message.conversationId;
+      const sender = payload.sender; // Assuming sender info is included in the payload
+
       setConversations((prevConvs: any[]) => {
-        const conv = prevConvs.find((conv: any) => conv._id === conversationId);
-        conv.lastMessage = message.content;
-        let newConvs = prevConvs.filter(
-          (conv: any) => conv._id !== conversationId
+        const convIndex = prevConvs.findIndex(
+          (conv: any) => conv._id === conversationId
         );
-        newConvs = [conv, ...newConvs];
+
+        // If conversation doesn't exist, create a new one
+        if (convIndex === -1) {
+          const newConversation = {
+            _id: conversationId,
+            members: [sender._id, message.recipient], // Adjust based on your data structure
+            lastMessage: message.content,
+            // Add other necessary fields from the message or sender
+            ...(sender && {
+              participants: [sender],
+              name: sender.username, // or any other identifier
+            }),
+          };
+          return [newConversation, ...prevConvs];
+        }
+
+        const conv = prevConvs[convIndex];
+        // Update the conversation's lastMessage
+        const updatedConv = { ...conv, lastMessage: message.content };
+
+        // Remove the conversation from its current position and add it to the top
+        let newConvs = prevConvs.filter(
+          (_: any, index: number) => index !== convIndex
+        );
+        newConvs = [updatedConv, ...newConvs];
+
         return newConvs;
       });
     });

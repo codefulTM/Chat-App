@@ -163,3 +163,74 @@ router.get("/requests", async (req, res) => {
     });
   }
 });
+
+/**
+ * @route GET /api/friendships/sent-requests
+ * @desc Get list of friend requests sent by the current user
+ * @access Private
+ * @returns List of pending friend requests sent by the current user
+ */
+router.get("/sent-requests", async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+
+    // Find all pending friend requests sent by current user
+    const sentRequests = await FriendshipModel.find({
+      senderId: userId,
+      status: "pending"
+    })
+      .populate("receiverId", "username displayName avatar")
+      .sort({ createdAt: -1 }); // Most recent first
+
+    return res.json({
+      success: true,
+      data: sentRequests,
+    });
+  } catch (error) {
+    console.error("Error fetching sent friend requests:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch sent friend requests",
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/friendships/unfriend/:friendId
+ * @desc Remove a friend
+ * @access Private
+ */
+router.delete("/unfriend/:friendId", async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const friendId = req.params.friendId;
+
+    // Find and delete the friendship where both users are involved
+    const result = await FriendshipModel.findOneAndDelete({
+      $or: [
+        { senderId: userId, receiverId: friendId, status: "accepted" },
+        { senderId: friendId, receiverId: userId, status: "accepted" },
+      ],
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Friendship not found or already removed",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Friend removed successfully",
+    });
+  } catch (error) {
+    console.error("Error removing friend:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to remove friend",
+    });
+  }
+});
+
+export default router;

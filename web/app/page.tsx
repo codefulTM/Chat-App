@@ -1,16 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
+interface Particle {
+  id: number;
+  left: number;
+  top: number;
+  delay: number;
+}
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    // Mark that we're on the client
+    setIsClient(true);
+    
+    // Initialize particles on client side only
+    setParticles(
+      Array.from({ length: 20 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 3,
+      }))
+    );
+
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll);
+    
+    // Initial scroll position
+    handleScroll();
+
+    // Cleanup
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const wavePath = useMemo(
+    () =>
+      `M0,60 C150,${40 + scrollY * 0.1} 350,${80 + scrollY * 0.05} 500,60 C650,${40 + scrollY * 0.1} 850,${80 + scrollY * 0.05} 1000,60 L1000,120 L0,120 Z`,
+    [scrollY]
+  );
+
+  // Show loading state during SSR or initial client render
+  if (!isClient) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-xl">Đang tải...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -98,15 +144,15 @@ export default function Home() {
             }deg)`,
           }}
         >
-          {[...Array(20)].map((_, i) => (
+          {particles.map((particle) => (
             <div
-              key={i}
+              key={particle.id}
               className="absolute w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                transform: `scale(${0.5 + Math.sin(scrollY * 0.01 + i) * 0.5})`,
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+                animationDelay: `${particle.delay}s`,
+                transform: `scale(${0.5 + Math.sin(scrollY * 0.01 + particle.id) * 0.5})`,
               }}
             />
           ))}
@@ -126,11 +172,7 @@ export default function Home() {
             preserveAspectRatio="none"
           >
             <path
-              d={`M0,60 C150,${40 + scrollY * 0.1} 350,${
-                80 + scrollY * 0.05
-              } 500,60 C650,${40 + scrollY * 0.1} 850,${
-                80 + scrollY * 0.05
-              } 1000,60 L1000,120 L0,120 Z`}
+              d={wavePath}
               fill="currentColor"
               className="text-indigo-300 dark:text-indigo-600"
             />
