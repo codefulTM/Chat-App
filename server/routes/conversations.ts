@@ -41,6 +41,10 @@ router.get("/:toUserId", async (req, res) => {
         members: [userId, toUserId],
       });
     }
+    data = await data.populate({
+      path: "members",
+      model: "User",
+    });
     return res.json({
       success: true,
       message: data,

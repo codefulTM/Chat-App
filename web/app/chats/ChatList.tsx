@@ -99,6 +99,7 @@ export default function ChatList({
 
     // bug: When the user is online twice, the set doesn't remove the user
     const handleUserOnline = (user: any) => {
+      console.log("user", user, "is online");
       setOnlineUsers((prev) => {
         const newMap = new Map(prev);
         newMap.set(user._id, user);
@@ -108,6 +109,7 @@ export default function ChatList({
 
     // Bug: When the user is offline, the set doesn't remove the user
     const handleUserOffline = (user: any) => {
+      console.log("user", user, "is offline");
       setOnlineUsers((prev) => {
         const newMap = new Map(prev);
         newMap.delete(user._id);
@@ -134,9 +136,14 @@ export default function ChatList({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
+          // console.log(data.message);
+          // console.log(data.message._id);
+          // console.log(
+          //   data.message.members.find((member: any) => member._id !== user?.id)
+          // );
           setConversationId(data.message._id);
           setToUser(
-            data.message.members.find((user: any) => user._id !== user?.id)
+            data.message.members.find((member: any) => member._id !== user?.id)
           );
         }
       });

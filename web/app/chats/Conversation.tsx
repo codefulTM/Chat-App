@@ -35,6 +35,7 @@ export default function Conversation({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  // console.log(conversationId);
 
   // Theo dõi thay đổi theme
   useEffect(() => {

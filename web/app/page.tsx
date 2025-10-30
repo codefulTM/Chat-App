@@ -18,7 +18,7 @@ export default function Home() {
   useEffect(() => {
     // Mark that we're on the client
     setIsClient(true);
-    
+
     // Initialize particles on client side only
     setParticles(
       Array.from({ length: 20 }, (_, i) => ({
@@ -34,18 +34,22 @@ export default function Home() {
     };
 
     // Add scroll event listener
-    window.addEventListener('scroll', handleScroll);
-    
+    window.addEventListener("scroll", handleScroll);
+
     // Initial scroll position
     handleScroll();
 
     // Cleanup
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const wavePath = useMemo(
     () =>
-      `M0,60 C150,${40 + scrollY * 0.1} 350,${80 + scrollY * 0.05} 500,60 C650,${40 + scrollY * 0.1} 850,${80 + scrollY * 0.05} 1000,60 L1000,120 L0,120 Z`,
+      `M0,60 C150,${40 + scrollY * 0.1} 350,${
+        80 + scrollY * 0.05
+      } 500,60 C650,${40 + scrollY * 0.1} 850,${
+        80 + scrollY * 0.05
+      } 1000,60 L1000,120 L0,120 Z`,
     [scrollY]
   );
 
@@ -152,7 +156,9 @@ export default function Home() {
                 left: `${particle.left}%`,
                 top: `${particle.top}%`,
                 animationDelay: `${particle.delay}s`,
-                transform: `scale(${0.5 + Math.sin(scrollY * 0.01 + particle.id) * 0.5})`,
+                transform: `scale(${
+                  0.5 + Math.sin(scrollY * 0.01 + particle.id) * 0.5
+                })`,
               }}
             />
           ))}

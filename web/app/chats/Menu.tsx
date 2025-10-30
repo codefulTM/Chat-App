@@ -76,15 +76,26 @@ export default function Menu({ setIsMenuVisible }: { setIsMenuVisible: any }) {
       ref={menuRef}
       className="flex flex-col gap-y-2 p-2 bg-[var(--surface)] rounded-md shadow-lg border border-[var(--border)]"
     >
-      <span className="block p-2 text-center text-xl font-bold text-[var(--text)] rounded-md">
-        {user?.username}
-      </span>
-      <span
-        className="block p-2 hover:bg-[var(--primary)] cursor-pointer text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200"
-        onClick={handleSignOut}
-      >
-        Sign out
-      </span>
+      {user?.username && (
+        <span className="block p-2 text-center text-xl font-bold text-[var(--text)] rounded-md">
+          {user?.username}
+        </span>
+      )}
+      {user ? (
+        <span
+          className="block p-2 hover:bg-[var(--primary)] cursor-pointer text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </span>
+      ) : (
+        <span
+          className="block p-2 hover:bg-[var(--primary)] cursor-pointer text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200"
+          onClick={() => router.push("/login")}
+        >
+          Sign in
+        </span>
+      )}
       <div className="relative group">
         <span className="block p-2 hover:bg-[var(--primary)] cursor-pointer flex items-center text-[var(--text)] text-base rounded-md hover:text-[var(--background)] transition-colors duration-200">
           <span className="mr-2">▼</span>

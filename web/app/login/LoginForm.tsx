@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import useSocket from "@/hooks/useSocket";
 import useAuth from "@/hooks/useAuth";
 import { parseCookies } from "nookies";
@@ -10,12 +10,22 @@ export default function LoginForm() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const socket = useSocket();
-  const { signIn } = useAuth();
+  const { signIn, jwtToken, loading } = useAuth();
+
+  // Redirect to chats if already logged in
+  useEffect(() => {
+    if (jwtToken) {
+      router.push("/chats");
+    }
+  }, [jwtToken]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
     try {
       const response = await fetch(
@@ -36,13 +46,13 @@ export default function LoginForm() {
         // attach jwt token to cookie
         const token = data.message;
         signIn(token);
-
-        router.push("/chats");
+        // The useEffect will handle the redirect when jwtToken updates
       } else {
         setError(data.message);
       }
     } catch (err) {
       setError((err as any).message);
+      setIsLoading(false);
     }
   };
 

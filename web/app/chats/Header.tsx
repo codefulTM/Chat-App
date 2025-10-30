@@ -49,8 +49,8 @@ export default function Header({
           }}
         ></FontAwesomeIcon>
         {isMenuVisible && (
-          <div className="absolute right-0 w-30 bg-white shadow-lg rounded-md">
-            <Menu setIsMenuVisible={setIsMenuVisible}></Menu>
+          <div className="absolute right-0 mt-2 mr-2 z-50 w-64">
+            <Menu setIsMenuVisible={setIsMenuVisible} />
           </div>
         )}
       </div>

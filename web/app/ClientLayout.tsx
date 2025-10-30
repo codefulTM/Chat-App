@@ -11,10 +11,11 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const { jwtToken } = useAuth();
+  const { jwtToken, loading } = useAuth();
+  console.log("ClientLayout render, jwtToken:", jwtToken, "loading:", loading);
 
   return (
-    <SocketProvider token={jwtToken}>
+    <SocketProvider jwtToken={jwtToken} loading={loading}>
       <div className="flex flex-col h-screen overflow-x-hidden">
         <Header
           isMenuVisible={isMenuVisible}

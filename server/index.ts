@@ -95,6 +95,7 @@ io.use(async (socket, next) => {
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     // console.log(payload);
+    // console.log(payload);
     if (typeof payload === "string" || !payload.id) {
       return next(new Error("Invalid token payload"));
     }
@@ -105,16 +106,18 @@ io.use(async (socket, next) => {
   }
 });
 
-const onlineMap = new Map();
+const onlineMap = new Map<string | undefined, Set<string>>();
 
 io.on("connection", async (socket) => {
   // Set the user to online and attach the socket to that user
   const userId = socket.userId;
+  console.log(userId);
 
   if (!onlineMap.has(userId)) {
     onlineMap.set(userId, new Set());
   }
-  onlineMap.get(userId).add(socket.id);
+  onlineMap.get(userId)?.add(socket.id);
+  console.log(onlineMap);
 
   const onlineUser = await UserModel.findByIdAndUpdate(userId, {
     isOnline: true,
@@ -127,6 +130,7 @@ io.on("connection", async (socket) => {
       { receiverId: userId, status: "accepted" },
     ],
   }).populate("senderId receiverId");
+  // console.log(friendships);
 
   // Lấy danh sách ID bạn bè
   const friendIds = friendships.map((friendship) =>
@@ -137,7 +141,8 @@ io.on("connection", async (socket) => {
 
   // Gửi sự kiện user_online cho từng người bạn
   friendIds.forEach((friendId) => {
-    io.to(onlineMap.get(friendId) || []).emit("user_online", onlineUser);
+    const friendSockets = onlineMap.get(friendId) || new Set();
+    io.to([...friendSockets]).emit("user_online", onlineUser);
   });
 
   socket.on("private_message", async (payload, ack) => {
@@ -353,6 +358,7 @@ io.on("connection", async (socket) => {
     set.delete(socket.id);
     if (set.size === 0) {
       onlineMap.delete(userId);
+      // console.log(onlineMap);
       const offlineUser = await UserModel.findByIdAndUpdate(userId, {
         isOnline: false,
       });
