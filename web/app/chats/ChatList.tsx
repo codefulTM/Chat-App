@@ -3,8 +3,8 @@
 import useAuth from "@/hooks/useAuth";
 import useSocket from "@/hooks/useSocket";
 import { useEffect, useState } from "react";
-import OnlineUsers from "./OnlineUsers";
-import MessageCard from "./MessageCard";
+import OnlineUsers from "./ChatListComponents/OnlineUsers";
+import MessageCard from "./ChatListComponents/MessageCard";
 
 export default function ChatList({
   token,

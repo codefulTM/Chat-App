@@ -8,6 +8,7 @@ import Header from "./ConversationComponents/Header";
 import UserSearch from "./ConversationComponents/UserSearch";
 import MessagesList from "./ConversationComponents/MessagesList";
 import MessageInput from "./ConversationComponents/MessageInput";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Conversation({
   conversationId,
@@ -29,7 +30,7 @@ export default function Conversation({
   const [currentReadMessage, setCurrentReadMessage] = useState<any>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [text, setText] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const { isDarkMode } = useTheme();
   const [messagePage, setMessagePage] = useState<number>(1);
   const [perMessagePage, setPerMessagePage] = useState<number>(10);
   const [isConversationReady, setIsConversationReady] =
@@ -41,25 +42,6 @@ export default function Conversation({
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const shouldScrollToBottomRef = useRef<boolean>(false);
   // console.log(conversationId);
-
-  // Theo dõi thay đổi theme
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    };
-
-    // Kiểm tra lần đầu
-    checkDarkMode();
-
-    // Tạo MutationObserver để theo dõi thay đổi class
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   // search for users
   useEffect(() => {
@@ -387,7 +369,6 @@ export default function Conversation({
         setDisplayName={setDisplayName}
         users={users}
         setToUser={setToUser}
-        isDarkMode={isDarkMode}
       />
     );
   }

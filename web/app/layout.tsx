@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 import Script from "next/script";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import ClientLayout from "./ClientLayout";
 
 const geistSans = Geist({
@@ -49,7 +50,9 @@ export default function RootLayout({
       >
         <Providers>
           <AuthProvider>
-            <ClientLayout>{children}</ClientLayout>
+            <ThemeProvider>
+              <ClientLayout>{children}</ClientLayout>
+            </ThemeProvider>
           </AuthProvider>
         </Providers>
       </body>

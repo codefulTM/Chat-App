@@ -1,16 +1,17 @@
+import { useTheme } from "@/contexts/ThemeContext";
+
 export default function UserSearch({
   displayName,
   setDisplayName,
   users,
   setToUser,
-  isDarkMode,
 }: {
   displayName: string;
   setDisplayName: (value: string) => void;
   users: any[];
   setToUser: (user: any) => void;
-  isDarkMode: boolean;
 }) {
+  const { isDarkMode } = useTheme();
   return (
     <div className="flex flex-col items-center gap-4">
       <input
