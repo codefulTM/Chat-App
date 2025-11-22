@@ -15,6 +15,7 @@ export default function MessageCard({
   currentUser: any;
   otherUser: any;
 }) {
+  console.log(conversation);
   return (
     <div
       onClick={onMessageCardClick}
@@ -39,8 +40,10 @@ export default function MessageCard({
         )}
       </div>
       <p className="text-sm">
-        {conversation.lastMessage.slice(0, 50) +
-          (conversation.lastMessage.length > 50 ? "..." : "")}
+        {conversation.lastMessage
+          ? conversation.lastMessage.slice(0, 50) +
+            (conversation.lastMessage.length > 50 ? "..." : "")
+          : "No messages yet"}
       </p>
     </div>
   );

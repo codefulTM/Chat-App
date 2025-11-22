@@ -107,6 +107,19 @@ export default function MessagesList({
                   >
                     {message.content}
                   </ReactMarkdown>
+                  {message.isStreaming && (
+                    <span className="inline-block ml-1 w-0.5 h-4 bg-purple-500 animate-pulse"></span>
+                  )}
+                </div>
+              )}
+              {/* Typing indicator when streaming starts but no content yet */}
+              {message.isStreaming && message.content === "" && (
+                <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-700 p-3 rounded-lg max-w-100 shadow-sm">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
                 </div>
               )}
               {message.fileUrl &&

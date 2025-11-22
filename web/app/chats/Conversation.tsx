@@ -141,6 +141,16 @@ export default function Conversation({
       });
   }, [conversationId, token, isConversationReady]);
 
+  // Define scrollToBottom before using it in event handlers
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+  }, []);
+
   // handle socket.io events
   useEffect(() => {
     if (!socket) return;
@@ -170,14 +180,76 @@ export default function Conversation({
       );
     };
 
+    // Handle AI streaming start
+    const handleAIMessageStart = (payload: any) => {
+      if (payload.conversationId !== conversationId) return;
+      
+      // Create a temporary message for streaming
+      const tempMessage = {
+        _id: payload.tempMessageId,
+        content: "",
+        sender: payload.sender,
+        type: "text",
+        isStreaming: true,
+      };
+      
+      setMessages((messages: any) => [...messages, tempMessage]);
+      
+      // Auto-scroll to show the new message
+      setTimeout(() => scrollToBottom(), 0);
+    };
+
+    // Handle AI streaming chunks
+    const handleAIMessageChunk = (payload: any) => {
+      if (payload.conversationId !== conversationId) return;
+      
+      setMessages((messages: any) =>
+        messages.map((msg: any) =>
+          msg._id === payload.tempMessageId
+            ? { ...msg, content: msg.content + payload.chunk }
+            : msg
+        )
+      );
+      
+      // Keep scrolling to bottom as content grows
+      if (messagesContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          messagesContainerRef.current;
+        const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 100;
+        if (isNearBottom) {
+          setTimeout(() => scrollToBottom(), 0);
+        }
+      }
+    };
+
+    // Handle AI streaming end
+    const handleAIMessageEnd = (payload: any) => {
+      if (payload.conversationId !== conversationId) return;
+      
+      // Replace the temporary message with the final saved message
+      setMessages((messages: any) =>
+        messages.map((msg: any) =>
+          msg._id === payload.tempMessageId
+            ? { ...payload.message, isStreaming: false }
+            : msg
+        )
+      );
+    };
+
     socket.on("private_message", handlePrivateMessage);
     socket.on("message_read", handleMessageRead);
+    socket.on("ai_message_start", handleAIMessageStart);
+    socket.on("ai_message_chunk", handleAIMessageChunk);
+    socket.on("ai_message_end", handleAIMessageEnd);
 
     return () => {
       socket.off("private_message", handlePrivateMessage);
       socket.off("message_read", handleMessageRead);
+      socket.off("ai_message_start", handleAIMessageStart);
+      socket.off("ai_message_chunk", handleAIMessageChunk);
+      socket.off("ai_message_end", handleAIMessageEnd);
     };
-  }, [socket]);
+  }, [socket, conversationId, scrollToBottom]);
 
   // Handle message seen when it comes into view
   useEffect(() => {
@@ -284,14 +356,7 @@ export default function Conversation({
     }
   };
 
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-    }
-  }, []);
+
 
   useEffect(() => {
     if (shouldScrollToBottomRef.current) {
